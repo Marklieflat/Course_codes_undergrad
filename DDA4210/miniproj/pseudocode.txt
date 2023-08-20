@@ -1,0 +1,6 @@
+import train & test dataset.
+Do oversampling of the training dataset.
+Add feature_5 on the original dataset
+Use GridsearchCV to find best hyperparameters.
+train the Adaboost Decision Tree model.
+Feed testing dataset to the model and get result.
