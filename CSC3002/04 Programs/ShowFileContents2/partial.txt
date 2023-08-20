@@ -1,0 +1,2 @@
+This is a complete line.
+This is a partial
