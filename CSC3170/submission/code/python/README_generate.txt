@@ -1,0 +1,1 @@
+Run ```python generate.py``` to generate outputs.
