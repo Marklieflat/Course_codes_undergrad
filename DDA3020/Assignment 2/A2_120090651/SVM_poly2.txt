@@ -1,0 +1,8 @@
+training error: 0.025
+testing_error: 0.0
+b_of_setosa: 1.22094132
+support_vector_indices_of_setosa: 78,13,31
+b_of_versicolor: 4.33667006
+support_vector_indices_of_versicolor: 14,31,89,93,96,97,99,103,108,48,50,52,57,58,63,64
+b_of_virginica: -10.42876523
+support_vector_indices_of_virginica: 50,52,57,63,96,97,99,103,108
