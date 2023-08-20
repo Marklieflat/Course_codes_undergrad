@@ -1,0 +1,186 @@
+---
+title: "Case 1"
+output: html_document
+date: '2022-05-11'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 设置工作目录 -----------------------------------------------------------------
+```
+setwd("D:/【CUHKSZ】/AY21, T2/FIN3080/Project/Project 3")
+```
+
+# 加载需要的R包 ----------------------------------------------------------------
+```
+library(tidyverse)
+library(fitdistrplus)
+library(e1071)
+library(lubridate)
+library(stringr)
+library(psych)
+library(zoo)
+library(parallel)
+library(openxlsx)
+```
+# 读取数据 --------------------------------------------------------------------
+```
+List1= read.csv("TRD_Dalyr_1.csv")
+List2= read.csv("TRD_Dalyr_2.csv")
+List3= read.csv("TRD_Dalyr_3.csv")
+List4= read.csv("TRD_Dalyr_4.csv")
+List5= read.csv("TRD_Dalyr_5.csv")
+List6= read.csv("TRD_Dalyr_6.csv")
+List7= read.csv("TRD_Dalyr_7.csv")
+```
+# 合并所有日收益率数据 ---------------------------------------------------------
+```
+DailyReturn = rbind.data.frame(List1,List2,List3,List4,List5,List6,List7) %>%
+  mutate(Trddt = ymd(Trddt)) %>%
+  mutate(Trddt=format(as.Date(Trddt),"%Y-%m") )%>%
+  mutate(CurrentDate = str_sub(Trddt,1,7))
+```
+# 创建储存各投资组合收益率的数据框 --------------------------------------------------------
+```
+Skew_Return= data.frame(matrix(NA,85,11))
+names(Skew_Return)[1]="TradingMonth"
+s=as.Date("2015-04-01")
+
+Seq = seq(from=s,by="month",length.out=85)
+
+Skew_Return[,1]=Seq
+Skew_Return = Skew_Return %>%
+  mutate(TradingMonth=format(as.Date(TradingMonth),"%Y-%m"))
+
+Kurt_Return= data.frame(matrix(NA,85,11))
+names(Kurt_Return)[1]="TradingMonth"
+
+Kurt_Return[,1]=Seq
+Kurt_Return = Kurt_Return %>%
+  mutate(TradingMonth=format(as.Date(TradingMonth),"%Y-%m"))
+
+i=2
+j=1
+for (i in 2:11){
+  names(Skew_Return)[i]=j
+  names(Kurt_Return)[i]=j
+  j=j+1
+}
+```
+# 用for循环计算各投资组合收益率 ----------------------------------------------------------------------
+```
+a=1
+b=1
+for (y in 2015:2022){
+  for (m in 1:12){
+    if ((y == 2015 & (m==1|m==2|m==3)) | (y==2022 & m>=5)) (next)
+    num=12*(y-2015)+m
+    y=2015
+    m=4
+    current_month=ym(paste(y,m,"-"))
+    date_sign = str_sub(current_month,1,7)
+    print(date_sign)
+    available_stock =data.frame(
+      code= unique(DailyReturn[DailyReturn$CurrentDate == date_sign,1]),
+      skewness=NA,kurtosis=NA)
+    month_interval=c(
+      str_sub(current_month-months(3),1,7),
+      str_sub(current_month-months(2),1,7),
+      str_sub(current_month-months(1),1,7)
+    )
+    i=1
+    n=nrow(available_stock)
+    CurrentReturn = DailyReturn  %>%
+      filter(CurrentDate %in% month_interval)
+    for (i in 1:n){
+      code=available_stock[i,1]
+      current_data = CurrentReturn %>%
+        filter(Stkcd == code)
+      available_stock[i,2] = skew(current_data[,3],na.rm = TRUE)
+      available_stock[i,3] = kurtosi(current_data[,3],na.rm = TRUE)
+    }
+    available_stock=drop_na(available_stock)
+    skew_arrange = arrange(available_stock,skewness)
+    n0=nrow(skew_arrange)
+    number = floor(nrow(skew_arrange)/10)
+    port_code = data.frame(matrix(NA,number,10))
+    kurt_arrange = arrange(available_stock,kurtosis)
+    n1=nrow(kurt_arrange)
+    number1 = floor(nrow(kurt_arrange)/10)
+    port_code1 = data.frame(matrix(NA,number,10))
+    for (d in 0:9){
+      port_code[,d]=skew_arrange[(d*number+1):((d+1)*number),1]
+      port_code1[,d]=kurt_arrange[(d*number1+1):((d+1)*number1),1]
+    }
+    c=1
+    for (a in 1:10){
+      for (c in 1:number)
+        Skew_Return[b,a+1]=CurrentReturn%>%
+          filter(Stkcd==port_code[c,a])%>%
+          summarise(mean(Dretwd))
+    }
+    for (a in 1:10){
+      for (c in 1:number1)
+        Kurt_Return[b,a+1]=CurrentReturn%>%
+          filter(Stkcd==port_code[c,a])%>%
+          summarise(mean(Dretwd))
+    }
+    b=b+1
+  }
+}
+```
+# 结果导出 ---------------------------------------------------------------------
+```
+write.xlsx(Skew_Return,sheetname="SkewReturn",file="SkewReturn.xlsx")
+write.xlsx(Kurt_Return,sheetname="KurtReturn",file="KurtReturn.xlsx")
+```
+# 超额收益率研究 ---------------------------------------------------------------
+```
+risk_free_rate = data.frame(read_xlsx('data/MBK_SHIBORM.xlsx'))
+risk_free_rate = risk_free_rate[-c(1,2),]
+kurto_return = read.csv('return_kurto.csv')
+kurto_return = kurto_return[-c(1:3),]
+skew_return = read.csv('return_skew.csv')
+skew_return = skew_return[-c(1:3),]
+fm_french = data.frame(read_xlsx('data/STK_MKT_THRFACMONTH.xlsx'))
+fm_french = fm_french[-c(1:2),]
+fm_french = fm_french[which(fm_french$MarkettypeID == 'P9709'),]
+fm_french$RiskPremium2 = as.numeric(fm_french$RiskPremium2)
+fm_french$SMB2 = as.numeric(fm_french$SMB2)
+fm_french$HML2 = as.numeric(fm_french$HML2)
+
+X11 = kurto_return$X1 - kurto_return$X10
+kurto_return = cbind(kurto_return,X11)
+X11 = skew_return$X10 - skew_return$X1
+skew_return = cbind(skew_return, X11)
+
+data_rf = risk_free_rate[which(risk_free_rate$Term == '1天'),]
+data_rf$Shibor = as.numeric(data_rf$Shibor)
+date <- strsplit(data_rf$SgnDate,split = "-") 
+date <- as.numeric(paste(do.call(rbind, date)[,1], do.call(rbind, date)[,2], sep = ''))
+data_rf$Date <- date
+data_month_rf = aggregate(data_rf$Shibor, by=list(month = data_rf$Date), mean)
+rf = data_month_rf$x/12
+rf = rf/100
+
+RiskPremium = fm_french$RiskPremium2 
+SMB = fm_french$SMB2
+HML = fm_french$HML2
+abnormal_returns_kurto = as.numeric()
+abnormal_returns_skew = as.numeric()
+for (i in 3:13){
+  rM_rf_kurto = kurto_return[,i]- rf
+  rM_rf_skew = skew_return[,i] - rf
+  fm_french.kurto = lm(rM_rf_kurto ~ RiskPremium + SMB + HML)
+  fm_french.skew = lm(rM_rf_skew ~ RiskPremium + SMB + HML)
+  abnormal_returns_kurto = c(abnormal_returns_kurto,fm_french.kurto$coefficients[1])
+  abnormal_returns_skew = c(abnormal_returns_skew, fm_french.skew$coefficients[1])
+}
+```
+# 结果导出 ------------------------------------------------------------------------
+```
+write.xlsx(abnormal_returns_kurto,sheetname="abnormal_returns_kurto",file="abnormal_returns_kurto.xlsx")
+write.xlsx(abnormal_returns_skew,sheetname="abnormal_returns_skew",file="abnormal_returns_skew.xlsx")
+```

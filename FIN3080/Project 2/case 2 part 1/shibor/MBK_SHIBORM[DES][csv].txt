@@ -1,0 +1,3 @@
+SgnDate [统计日期] - YYYY-MM
+Term [Shibor期限] - 1天、7天、14天、30天、90天、6个月、9个月、1年。
+Shibor [Shibor(%)] - 

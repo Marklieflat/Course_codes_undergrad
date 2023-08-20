@@ -1,0 +1,6 @@
+Symbol [证券代码] - 以上交所、深交所公布的证券代码为准。
+TradingDate [交易日期] - 以YYYY-MM-DD表示。
+StockPrice [股票价格] - 股票在证券市场上买卖的价格。
+EPS [每股收益] - 净利润/实收资本。
+NAV [每股净资产] - 所有者权益合计/实收资本。
+DividentPerShare [每股现金分红] - 每股现金分红。

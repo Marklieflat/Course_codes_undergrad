@@ -1,0 +1,3 @@
+SgnDate [Statistical Day] - YYYY-MM-DD
+Term_EN [Shibor Term] - 1 Day, 7 Days, 14 Days, 30 Days, 90 Days, 6 Months, 9 Month, 1 Year
+Shibor [Shibor] - 

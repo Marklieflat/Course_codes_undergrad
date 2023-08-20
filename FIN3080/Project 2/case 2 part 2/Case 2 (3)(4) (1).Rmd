@@ -1,0 +1,99 @@
+---
+title: "Case 2 (3) (4)"
+output: html_document
+date: '2022-04-20'
+---
+
+
+## 数据预处理
+
+#设置工作目录
+setwd("D:/【CUHKSZ】/AY21, T2/FIN3080/Project/Project 2/Case 2, (3) (4)/衍生指标")
+
+# 加载需要的R包
+library(plyr)
+library(tidyverse)
+library(lubridate)
+
+# 读取数据
+STK_a =read.csv("STK_MKT_DALYR_2018.csv")
+STK_b =read.csv("STK_MKT_DALYR_2018-2.csv")
+STK_c =read.csv("STK_MKT_DALYR_2016-2.csv")
+STK_d =read.csv("STK_MKT_DALYR_2020.csv")
+STK_e =read.csv("STK_MKT_DALYR_2020-2.csv")
+STK_f =read.csv("STK_MKT_DALYR_2020-3.csv")
+STK_g =read.csv("STK_MKT_DALYR_2014.csv")
+STK_h =read.csv("STK_MKT_DALYR_2014-2.csv")
+STK_i =read.csv("STK_MKT_DALYR_2012.csv")
+STK_j =read.csv("STK_MKT_DALYR_2012-2.csv")
+STK_k =read.csv("STK_MKT_DALYR_2010.csv")
+STK_l =read.csv("STK_MKT_DALYR_2008.csv")
+STK_m =read.csv("STK_MKT_DALYR_2006.csv")
+STK_n =read.csv("STK_MKT_DALYR_2006-2.csv")
+
+#联合所有数据
+STK=join_all(list(STK_a,STK_b,STK_c,STK_d,STK_e,STK_f,STK_g,STK_h,STK_j,STK_i,STK_l,STK_k,STK_m,STK_n),type = "full")
+
+#将日期转换为Date对象并只取月份
+STK_all = STK %>%
+  mutate(TradingDate = ymd(TradingDate)) %>%
+  mutate(TradingDate=format(as.Date(STK$TradingDate),"%Y-%m") )%>%
+  filter(na.rm=TRUE) %>%
+  select(TradingDate,Symbol,PE,PB,Ret)
+
+#按月groupby并对各衍生指标取平均
+STK_Results= group_by(STK_all,TradingDate,Symbol) %>%
+  summarize(PB = mean(PB, na.rm=TRUE),
+            PE = mean(PE, na.rm=TRUE),
+            Ret = mean(Ret, na.rm=TRUE))
+
+#舍弃NaN值
+STK_Results <- na.omit(STK_Results)
+
+#计算ROE
+STK_Results= STK_Results %>%
+  mutate(ROE=PB/PE)
+
+## PB分析
+Return = read.csv("TRD_Mnth.csv")
+
+PB = STK_Results %>%
+  filter(TradingDate>"2006-12")%>%
+  select(TradingDate,Symbol,PB)%>%
+  arrange(TradingDate)
+
+#汇总PB、股票代码、月份、收益率
+PB_return= left_join(PB,Return,by=c("Symbol"="Stkcd","TradingDate"="Trdmnt"))%>%
+  select(TradingDate,Symbol,PB,Mretwd)%>%
+  arrange(PB)
+
+#导出csv文件进行后续分析
+write.csv(PB_return,"PB_Return.csv")
+
+##PE,ROE分析
+PEROE=STK_Results %>%
+  filter(TradingDate>"2006-12")%>%
+  select(TradingDate,Symbol,PE,ROE)%>%
+  arrange(TradingDate)
+
+#汇总PE、ROE、股票代码、月份、收益率
+PEROE_return= left_join(PEROE,Return,by=c("Symbol"="Stkcd","TradingDate"="Trdmnt"))%>%
+  select(TradingDate,Symbol,PE,ROE,Mretwd)
+
+#导出csv文件进行后续分析
+write.csv(PEROE_return,"PEROE_Return.csv")
+
+
+## shibor计算
+shibor=read.csv("SHIBOR_LDAVGRATE.csv")
+
+SHIBOR1 = shibor %>%
+  mutate(Tradingdate = ymd(Tradingdate)) %>%
+  mutate(Tradingdate=format(as.Date(shibor$Tradingdate),"%Y-%m") )%>%
+  filter(Term=="1M",na.rm=TRUE)
+  
+SHIBOR2=group_by(SHIBOR1,Tradingdate) %>%
+  summarize(InterestRate=mean(InterestRate))
+
+write.csv(SHIBOR2,"SHIBOR.csv")
+
