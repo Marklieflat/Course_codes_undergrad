@@ -1,0 +1,6 @@
+a=input('please enter your weight')
+b=input('please enter your height')
+a=float(a)
+b=float(b)
+c=a/(b**2)
+print('your BMI is',c)

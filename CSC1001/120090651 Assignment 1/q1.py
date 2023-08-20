@@ -1,0 +1,5 @@
+finalAccountValue = eval(input('Enter the final account value:'))
+annualInterestRate = eval(input('Enter the annual interest rate:'))
+numberOfYears = eval(input('Enter the number of years:'))
+initialDepositAmount = finalAccountValue/((1 + 0.01*annualInterestRate)**numberOfYears)
+print('The initial value is:',initialDepositAmount)
